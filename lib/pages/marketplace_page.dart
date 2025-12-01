@@ -1,0 +1,616 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unilife/services/auth_service.dart';
+import 'package:unilife/theme/app_theme.dart';
+import 'package:unilife/models/marketplace_product.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:unilife/pages/my_products_page.dart';
+import 'package:unilife/pages/my_purchases_page.dart';
+
+class MarketplacePage extends StatefulWidget {
+  @override
+  _MarketplacePageState createState() => _MarketplacePageState();
+}
+
+class _MarketplacePageState extends State<MarketplacePage> {
+  List<MarketplaceProduct> _products = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  bool _isGridView = false; // Toggle between grid and list view
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final products = await authService.apiService.getMarketplaceProducts();
+      // Show only products with status 'publicado' (available)
+      final available = products
+          .where((p) => p.estado.toLowerCase() == 'publicado')
+          .toList();
+      setState(() {
+        _products = available;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+      child: RefreshIndicator(
+        onRefresh: _loadProducts,
+        color: AppTheme.primaryPurple,
+        child: CustomScrollView(
+          slivers: [
+            // Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🏪 Marketplace',
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Compra y vende entre estudiantes',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Action buttons row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MyProductsPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.inventory_2, size: 18),
+                            label: const Text(
+                              'Mis Productos',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MyPurchasesPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.shopping_bag, size: 18),
+                            label: const Text(
+                              'Mis Compras',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // View toggle button
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _isGridView = !_isGridView;
+                            });
+                          },
+                          icon: Icon(
+                            _isGridView ? Icons.view_list : Icons.grid_view,
+                            color: AppTheme.primaryPurple,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppTheme.cardBackground,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+
+            // Grid de productos
+            if (_isLoading)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.primaryPurple,
+                    ),
+                  ),
+                ),
+              )
+            else if (_errorMessage != null)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppTheme.accentOrange,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadProducts,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (_products.isEmpty)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.store_outlined,
+                        size: 64,
+                        color: AppTheme.textSecondary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay productos en el marketplace',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _isGridView
+                  ? SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 0.75,
+                            ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final product = _products[index];
+                          return _buildGridCard(product);
+                        }, childCount: _products.length),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final product = _products[index];
+                          return _buildProductCard(product);
+                        }, childCount: _products.length),
+                      ),
+                    ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductCard(MarketplaceProduct product) {
+    final isSold = product.cuComprador != null;
+
+    return GestureDetector(
+      onTap: () => _showProductDetails(product),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        color: AppTheme.cardBackground,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Imagen
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  product.imagenUrl ?? 'https://via.placeholder.com/80',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 80,
+                      height: 80,
+                      color: AppTheme.darkBackground,
+                      child: const Icon(
+                        Icons.image,
+                        color: AppTheme.textSecondary,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Información
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.titulo,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Bs. ${product.precio.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppTheme.accentGreen,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSold
+                            ? AppTheme.accentGreen.withOpacity(0.2)
+                            : AppTheme.accentOrange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isSold ? 'Vendido' : 'Disponible',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isSold
+                              ? AppTheme.accentGreen
+                              : AppTheme.accentOrange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    // Button for reserved products to mark as delivered
+                    if (product.estado.toLowerCase() == 'reservado')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            try {
+                              await Provider.of<AuthService>(
+                                context,
+                                listen: false,
+                              ).apiService.updateMarketplaceProductStatus(
+                                productId: product.id,
+                                status: 'vendido',
+                              );
+                              // Refresh after update
+                              _loadProducts();
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Error al marcar entregado: $e',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Entregado'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accentGreen,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridCard(MarketplaceProduct product) {
+    return GestureDetector(
+      onTap: () => _showProductDetails(product),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: product.imagenUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: product.imagenUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppTheme.darkBackground,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppTheme.darkBackground,
+                          child: const Icon(
+                            Icons.shopping_bag,
+                            size: 40,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: AppTheme.darkBackground,
+                        child: const Icon(
+                          Icons.shopping_bag,
+                          size: 40,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+              ),
+            ),
+            // Información
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.titulo,
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bs. ${product.precio.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppTheme.accentGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.vendedorNombre ?? 'Vendedor',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProductDetails(MarketplaceProduct product) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: AppTheme.cardBackground,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen del producto
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              child: Container(
+                height: 250,
+                width: double.infinity,
+                color: AppTheme.darkBackground,
+                child: product.imagenUrl != null
+                    ? Image.network(
+                        product.imagenUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.shopping_bag,
+                              size: 80,
+                              color: AppTheme.textSecondary,
+                            ),
+                      )
+                    : const Icon(
+                        Icons.shopping_bag,
+                        size: 80,
+                        color: AppTheme.textSecondary,
+                      ),
+              ),
+            ),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Título
+                    Text(
+                      product.titulo,
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Vendedor y estado
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 20,
+                          color: AppTheme.primaryPurple,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          product.vendedorNombre ?? 'Vendedor',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: product.isNew
+                                ? AppTheme.accentGreen.withOpacity(0.2)
+                                : AppTheme.primaryBlue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            product.estado,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: product.isNew
+                                      ? AppTheme.accentGreen
+                                      : AppTheme.primaryBlue,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Descripción
+                    Text(
+                      product.descripcion,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+
+                    const Spacer(),
+
+                    // Precio y botón
+                    Row(
+                      children: [
+                        Text(
+                          'Bs. ${product.precio.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.displayMedium
+                              ?.copyWith(color: AppTheme.accentGreen),
+                        ),
+                        const Spacer(),
+                        // Contactar button (only if product is disponible)
+                        if (product.estado.toLowerCase() == 'publicado')
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(context); // Close the bottom sheet
+                              try {
+                                await Provider.of<AuthService>(
+                                  context,
+                                  listen: false,
+                                ).apiService.updateMarketplaceProductStatus(
+                                  productId: product.id,
+                                  status: 'reservado',
+                                  cuComprador:
+                                      Provider.of<AuthService>(
+                                            context,
+                                            listen: false,
+                                          )
+                                          .currentUser
+                                          ?.codigoEstudiante, // Correctly pass 'codigoEstudiante'
+                                );
+                                // Refresh list after status change
+                                _loadProducts();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Producto reservado. Contacta al vendedor para coordinar la entrega.',
+                                    ),
+                                    backgroundColor: AppTheme.accentGreen,
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al contactar: $e'),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.contact_mail),
+                            label: const Text('Contactar'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentOrange,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
