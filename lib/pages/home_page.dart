@@ -41,8 +41,15 @@ class _HomePageState extends State<HomePage> {
       final authService = Provider.of<AuthService>(context, listen: false);
       final announcements = await authService.apiService.getAnnouncements();
 
+      // Filtrar anuncios cuya fecha de finalización ya pasó
+      final now = DateTime.now();
+      final validAnnouncements = announcements.where((a) {
+        return a.fechaFinalizacion == null ||
+            !a.fechaFinalizacion!.isBefore(now);
+      }).toList();
+
       setState(() {
-        _announcements = announcements;
+        _announcements = validAnnouncements;
         _isLoading = false;
       });
     } catch (e) {
@@ -311,37 +318,46 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
 
-            // Metadata
-            Row(
+            // Metadata: categoría + carrera (primera línea) y fecha inicio en segunda línea
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryPurple,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    announcement.categoria,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontSize: 12,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryPurple,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        announcement.categoria,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.school, size: 16, color: AppTheme.textSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      announcement.carrera,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Fecha de inicio en línea separada, alineada a la derecha
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    announcement.formattedDate,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Icon(Icons.school, size: 16, color: AppTheme.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  announcement.carrera,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const Spacer(),
-                Text(
-                  announcement.formattedDate,
-                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -351,7 +367,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: SingleChildScrollView(
                 child: Text(
-                  announcement.contenido,
+                  announcement.detalles ?? announcement.contenido,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),

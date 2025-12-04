@@ -4,6 +4,7 @@ import 'package:unilife/services/auth_service.dart';
 import 'package:unilife/theme/app_theme.dart';
 import 'package:unilife/models/marketplace_product.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:unilife/pages/my_products_page.dart';
 import 'package:unilife/pages/my_purchases_page.dart';
 
@@ -309,11 +310,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        isSold ? 'Vendido' : 'Disponible',
+                        'nuevo - casi nuevo',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isSold
-                              ? AppTheme.accentGreen
-                              : AppTheme.accentOrange,
+                          color: AppTheme.accentGreen,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -452,165 +451,290 @@ class _MarketplacePageState extends State<MarketplacePage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: AppTheme.cardBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen del producto
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: Container(
-                height: 250,
-                width: double.infinity,
-                color: AppTheme.darkBackground,
-                child: product.imagenUrl != null
-                    ? Image.network(
-                        product.imagenUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.shopping_bag,
-                              size: 80,
-                              color: AppTheme.textSecondary,
-                            ),
-                      )
-                    : const Icon(
-                        Icons.shopping_bag,
-                        size: 80,
-                        color: AppTheme.textSecondary,
-                      ),
-              ),
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: AppTheme.cardBackground,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Título
-                    Text(
-                      product.titulo,
-                      style: Theme.of(context).textTheme.displayMedium,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Vendedor y estado
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person,
-                          size: 20,
-                          color: AppTheme.primaryPurple,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          product.vendedorNombre ?? 'Vendedor',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: product.isNew
-                                ? AppTheme.accentGreen.withOpacity(0.2)
-                                : AppTheme.primaryBlue.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            product.estado,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: product.isNew
-                                      ? AppTheme.accentGreen
-                                      : AppTheme.primaryBlue,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Imagen del producto
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                  child: Container(
+                    height: 250,
+                    width: double.infinity,
+                    color: AppTheme.darkBackground,
+                    child: product.imagenUrl != null
+                        ? Image.network(
+                            product.imagenUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.shopping_bag,
+                                  size: 80,
+                                  color: AppTheme.textSecondary,
                                 ),
+                          )
+                        : const Icon(
+                            Icons.shopping_bag,
+                            size: 80,
+                            color: AppTheme.textSecondary,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                  ),
+                ),
 
-                    // Descripción
-                    Text(
-                      product.descripcion,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-
-                    const Spacer(),
-
-                    // Precio y botón
-                    Row(
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Título
+                        Text(
+                          product.titulo,
+                          style: Theme.of(context).textTheme.displayMedium,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Vendedor y estado
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person,
+                              size: 20,
+                              color: AppTheme.primaryPurple,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              product.vendedorNombre ?? 'Vendedor',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: product.isNew
+                                    ? AppTheme.accentGreen.withOpacity(0.2)
+                                    : AppTheme.primaryBlue.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                product.estado,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: product.isNew
+                                          ? AppTheme.accentGreen
+                                          : AppTheme.primaryBlue,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Descripción
+                        Text(
+                          product.descripcion,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+
+                        const Spacer(),
+
+                        // Mostrar el precio arriba y las acciones en una fila separada
                         Text(
                           'Bs. ${product.precio.toStringAsFixed(2)}',
                           style: Theme.of(context).textTheme.displayMedium
                               ?.copyWith(color: AppTheme.accentGreen),
                         ),
-                        const Spacer(),
-                        // Contactar button (only if product is disponible)
+                        const SizedBox(height: 12),
                         if (product.estado.toLowerCase() == 'publicado')
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              Navigator.pop(context); // Close the bottom sheet
-                              try {
-                                await Provider.of<AuthService>(
-                                  context,
-                                  listen: false,
-                                ).apiService.updateMarketplaceProductStatus(
-                                  productId: product.id,
-                                  status: 'reservado',
-                                  cuComprador:
-                                      Provider.of<AuthService>(
-                                            context,
-                                            listen: false,
-                                          )
-                                          .currentUser
-                                          ?.codigoEstudiante, // Correctly pass 'codigoEstudiante'
-                                );
-                                // Refresh list after status change
-                                _loadProducts();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Producto reservado. Contacta al vendedor para coordinar la entrega.',
-                                    ),
-                                    backgroundColor: AppTheme.accentGreen,
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error al contactar: $e'),
-                                  ),
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.contact_mail),
-                            label: const Text('Contactar'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.accentOrange,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  Navigator.pop(
+                                    context,
+                                  ); // Close the bottom sheet
+                                  try {
+                                    await Provider.of<AuthService>(
+                                      context,
+                                      listen: false,
+                                    ).apiService.updateMarketplaceProductStatus(
+                                      productId: product.id,
+                                      status: 'reservado',
+                                      cuComprador: Provider.of<AuthService>(
+                                        context,
+                                        listen: false,
+                                      ).currentUser?.codigoEstudiante,
+                                    );
+                                    // Refresh list after status change
+                                    _loadProducts();
+                                    _showReservationModal();
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error al reservar: $e'),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.book_online),
+                                label: const Text('Reservar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentOrange,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  Navigator.pop(
+                                    context,
+                                  ); // Close the bottom sheet
+                                  final whatsapp = product.vendedorWhatsapp;
+                                  if (whatsapp == null ||
+                                      whatsapp.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Número de WhatsApp no disponible.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Normalize number: remove non-digit characters and leading +
+                                  final digitsOnly = whatsapp.replaceAll(
+                                    RegExp(r'[^0-9]'),
+                                    '',
+                                  );
+                                  final uri = Uri.parse(
+                                    'https://wa.me/$digitsOnly',
+                                  );
+                                  try {
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(
+                                        uri,
+                                        mode: LaunchMode.externalApplication,
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'No se pudo abrir WhatsApp.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error al abrir WhatsApp: $e',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.chat),
+                                label: const Text('Contactar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryPurple,
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+    ;
+  }
+
+  void _showReservationModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final bottom = MediaQuery.of(context).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottom),
+          child: SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              // Let content size itself but cap height to avoid overflow
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              decoration: const BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.book_online,
+                    size: 48,
+                    color: AppTheme.accentGreen,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Reservación exitosa',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tu reserva se ha registrado. Revisa el estado de la entrega en Mis Compras.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Cerrar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

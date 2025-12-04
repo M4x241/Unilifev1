@@ -8,6 +8,7 @@ class MarketplaceProduct {
   // Owner (seller) info
   final String? cuOwner;
   final String? vendedorNombre;
+  final String? vendedorWhatsapp;
   // Buyer info (optional)
   final String? cuComprador;
   final String? compradorNombre;
@@ -24,17 +25,20 @@ class MarketplaceProduct {
     this.vendedorNombre,
     this.cuComprador,
     this.compradorNombre,
+    this.vendedorWhatsapp,
     this.createdAt,
   });
 
   factory MarketplaceProduct.fromJson(Map<String, dynamic> json) {
     // Owner name may be composed of nombres and apellidos
     String? ownerName;
+    String? ownerWhatsapp;
     if (json['owner'] != null && json['owner'] is Map) {
       final owner = json['owner'] as Map<String, dynamic>;
       final nombres = owner['nombres']?.toString() ?? '';
       final apellidos = owner['apellidos']?.toString() ?? '';
       ownerName = (nombres + ' ' + apellidos).trim();
+      ownerWhatsapp = owner['whatsapp']?.toString();
     }
     // Buyer name similar
     String? buyerName;
@@ -53,6 +57,7 @@ class MarketplaceProduct {
       estado: json['status']?.toString() ?? 'nuevo', // Map 'status' to 'estado'
       cuOwner: json['cu_owner']?.toString(),
       vendedorNombre: ownerName,
+      vendedorWhatsapp: ownerWhatsapp,
       cuComprador: json['cu_comprador']?.toString(),
       compradorNombre: buyerName,
       createdAt: json['created_at'] != null
@@ -70,6 +75,7 @@ class MarketplaceProduct {
       'imagen_url': imagenUrl,
       'estado': estado,
       'cu_owner': cuOwner,
+      'whatsapp_owner': vendedorWhatsapp,
       'cu_comprador': cuComprador,
       'created_at': createdAt?.toIso8601String(),
       // owner and comprador objects are not reconstructed here

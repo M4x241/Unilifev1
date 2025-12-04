@@ -7,7 +7,8 @@ import 'package:unilife/models/announcement.dart';
 import 'package:unilife/models/whatsapp_group.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.8:8000/api';
+  static const String baseUrl = 'http://10.46.168.166:8000/api';
+  //static const String baseUrl = 'http://192.168.100.8:8000/api';
 
   String? _token;
 

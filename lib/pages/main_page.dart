@@ -61,10 +61,12 @@ class _MainPageState extends State<MainPage> {
               icon: CircleAvatar(
                 backgroundColor: Colors.white.withOpacity(0.2),
                 child: Text(
-                  authService.currentUser?.nombre
-                          .substring(0, 1)
-                          .toUpperCase() ??
-                      'U',
+                  (() {
+                    final name = authService.currentUser?.nombre ?? '';
+                    return name.isNotEmpty
+                        ? name.substring(0, 1).toUpperCase()
+                        : 'U';
+                  })(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
